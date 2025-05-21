@@ -1,0 +1,40 @@
+services:
+  springboot-app:
+    build:
+        context: .
+        dockerfile: Dockerfile
+    environment:
+        SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/coffee_shop
+        SPRING_DATASOURCE_USERNAME: user
+        SPRING_DATASOURCE_PASSWORD: postgres
+        SPRING_JPA_HIBERNATE_DDL_AUTO: update
+        SPRING_JPA_SHOW_SQL: true
+    ports:
+        - "8080:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+        - app-network
+
+
+  database:
+    image: postgres:17.5-alpine3.21
+    container_name: database
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: coffee_shop
+    ports:
+      - "5432:5432"
+    networks:
+        - app-network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  app-network:
+    driver: bridge
