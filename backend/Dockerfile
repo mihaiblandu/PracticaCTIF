@@ -3,7 +3,10 @@ WORKDIR /app
 
 COPY target/*.jar app.jar
 
-EXPOSE 8080
+COPY src/main/resources/certs /app/certs
+
+
+EXPOSE 8443
 
 ENV JAVA_OPTS=""
 

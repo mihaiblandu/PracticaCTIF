@@ -64,7 +64,7 @@ public class SecurityConfig {
                         .ignoringRequestMatchers("/api/auth/register", "/api/auth/login","/api/csrf-token"))
                 .cors(withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/test/hello","/api/csrf-token").permitAll()
+                        .requestMatchers("/api/auth/**","/api/csrf-token").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
