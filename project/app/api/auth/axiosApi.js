@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import Cookie from 'js-cookie';
 // import {EXPO_PUBLIC_URL} from '@env';
 
-const API_BASE_URL= "http://localhost:8080";
+const API_BASE_URL= "https://localhost:8443";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
