@@ -126,6 +126,13 @@ public class JwtTokenUtil {
     public String generateToken(org.springframework.security.core.userdetails.UserDetails userDetails) {
         logger.debug("Generating JWT token for user: {}", userDetails.getUsername());
         Map<String, Object> claims = new HashMap<>();
+//        claims.put("roles", userDetails.getAuthorities());
+//        claims.put("userId", userDetails.getUsername());
+//
+//        // setup origin //
+//        //   origin
+//        //   id token
+//        //   Assuming username is the user ID, adjust as needed
         String token = createToken(claims, userDetails.getUsername());
         logger.debug("Token generated successfully");
         return token;

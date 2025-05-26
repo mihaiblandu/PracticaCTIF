@@ -1,22 +1,26 @@
+version: '3.9'
+
 services:
   springboot-app:
     build:
-        context: .
-        dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile
     environment:
-        SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/coffee_shop
-        SPRING_DATASOURCE_USERNAME: user
-        SPRING_DATASOURCE_PASSWORD: postgres
-        SPRING_JPA_HIBERNATE_DDL_AUTO: update
-        SPRING_JPA_SHOW_SQL: true
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/coffee_shop
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: true
+      VAULT_TOKEN: myroot
     ports:
-        - "8443:8443"
+      - "8443:8443"
     depends_on:
       database:
         condition: service_healthy
+      vault:
+        condition: service_started
     networks:
-        - app-network
-
+      - app-network
 
   database:
     image: postgres:17.5-alpine3.21
@@ -28,13 +32,33 @@ services:
     ports:
       - "5432:5432"
     networks:
-        - app-network
+      - app-network
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "user"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  vault:
+    image: hashicorp/vault:1.19
+    container_name: vault
+    ports:
+      - "8200:8200"
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: myroot
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    command: vault server -dev
+    volumes:
+      - /d/IntelliJ IDEA 2024.3.1.1/Projects/Practica/backend/vault/keys:/vault/key
+      - ./vault/upload-keys.sh:/vault/upload-keys.sh
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  vault_data:
