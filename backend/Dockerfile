@@ -3,8 +3,6 @@ WORKDIR /app
 
 COPY target/*.jar app.jar
 
-COPY src/main/resources/certs /app/certs
-
 
 EXPOSE 8443
 
