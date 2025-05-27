@@ -21,8 +21,19 @@ vault kv put secret/backend/jwt \
   public_key="$(cat "$KEYS_DIR/public_key.pem")"
 
 if [ $? -eq 0 ]; then
-  echo "[vault-dev-init] Keys uploaded successfully."
+  echo "[vault-dev-init] JWT keys uploaded successfully."
 else
-  echo "[vault-dev-init] Failed to upload keys."
+  echo "[vault-dev-init] Failed to upload JWT keys."
+  exit 1
+fi
+
+echo "[vault-dev-init] Uploading HMAC secret..."
+
+vault kv put secret/backend/hmac-secret key=$(openssl rand -base64 32)
+
+if [ $? -eq 0 ]; then
+  echo "[vault-dev-init] HMAC secret uploaded successfully."
+else
+  echo "[vault-dev-init] Failed to upload HMAC secret."
   exit 1
 fi
