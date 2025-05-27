@@ -10,10 +10,7 @@ import org.springframework.vault.support.Versioned;
 
 import java.security.*;
 import java.security.spec.*;
-import java.util.Base64;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 @Component
@@ -123,12 +120,14 @@ public class JwtTokenUtil {
         return key;
     }
 
-    public String generateToken(org.springframework.security.core.userdetails.UserDetails userDetails) {
+    public String generateToken(CustomUserDetails userDetails) {
         logger.debug("Generating JWT token for user: {}", userDetails.getUsername());
         Map<String, Object> claims = new HashMap<>();
-//        claims.put("roles", userDetails.getAuthorities());
-//        claims.put("userId", userDetails.getUsername());
-//
+        claims.put("jti", UUID.randomUUID().toString());
+        claims.put("roles", userDetails.getAuthorities());
+        claims.put("userId", userDetails.getUsername());
+        claims.put("email", userDetails.getEmail());
+
 //        // setup origin //
 //        //   origin
 //        //   id token
@@ -148,7 +147,7 @@ public class JwtTokenUtil {
                 .compact();
     }
 
-    public Boolean validateToken(String token, org.springframework.security.core.userdetails.UserDetails userDetails) {
+    public Boolean validateToken(String token, CustomUserDetails userDetails) {
         logger.debug("Validating JWT token");
         try {
             final String username = extractUsername(token);
@@ -161,6 +160,14 @@ public class JwtTokenUtil {
         }
     }
 
+    public Claims parseClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getPublicKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
@@ -168,8 +175,11 @@ public class JwtTokenUtil {
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
+    public String extractJwtId(String token) {
+        return extractClaim(token, claims -> claims.get("jti", String.class));
+    }
 
-    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }

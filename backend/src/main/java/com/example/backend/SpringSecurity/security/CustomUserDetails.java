@@ -1,6 +1,7 @@
 package com.example.backend.SpringSecurity.security;
 
 import com.example.backend.SpringSecurity.model.User;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
@@ -12,6 +13,7 @@ import java.util.Collections;
 
 @Getter
 @Setter
+@Data
 public class CustomUserDetails implements UserDetails {
 
     private final User user;
@@ -23,6 +25,11 @@ public class CustomUserDetails implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+    }
+
+
+    public String getEmail() {
+        return user.getEmail();
     }
 
     @Override

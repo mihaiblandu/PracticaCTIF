@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: backend
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/coffee_shop}
+    username: ${SPRING_DATASOURCE_USERNAME:user}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    show-sql: ${SPRING_JPA_SHOW_SQL:true}
+    properties:
+      hibernate:
+        format_sql: true
+
+  cloud:
+    vault:
+      uri: http://vault:8200
+      authentication: token
+      token: myroot
+      kv:
+        enabled: true
+        backend: secret
+        application-name: backend
+        default-context: jwt
+        profile-separator: /
+
+  config:
+    import: vault://
+
+server:
+  port: 8443
+  ssl:
+    enabled: true
+    key-store: classpath:certs/server-cert.pfx
+    key-store-password: development321
+    key-store-type: PKCS12
+
+logging:
+  level:
+    org:
+      springframework:
+        web: DEBUG
+    com:
+      example:
+        backend:
+          SpringSecurity:
+            security: DEBUG

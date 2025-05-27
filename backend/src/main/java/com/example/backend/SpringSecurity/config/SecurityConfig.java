@@ -1,7 +1,9 @@
 package com.example.backend.SpringSecurity.config;
 
+import com.example.backend.SpringSecurity.filter.CsrfTokenValidationFilter;
 import com.example.backend.SpringSecurity.filter.JwtRequestFilter;
-import com.example.backend.SpringSecurity.security.CustomUserDetailsService;
+import com.example.backend.SpringSecurity.security.CsrfRepository;
+import com.example.backend.SpringSecurity.service.CustomUserDetailsService;
 import com.example.backend.SpringSecurity.security.JwtTokenUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,12 +18,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.Arrays;
 
@@ -32,10 +31,13 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final JwtTokenUtil jwtTokenUtil;
+    private final CsrfRepository csrfRepository;
 
-    public SecurityConfig(CustomUserDetailsService userDetailsService, JwtTokenUtil jwtTokenUtil) {
+    public SecurityConfig(CustomUserDetailsService userDetailsService, JwtTokenUtil jwtTokenUtil,
+                          CsrfRepository csrfRepository) {
         this.userDetailsService = userDetailsService;
         this.jwtTokenUtil = jwtTokenUtil;
+        this.csrfRepository = csrfRepository;
     }
 
     @Bean
@@ -60,16 +62,17 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .ignoringRequestMatchers("/api/auth/register", "/api/auth/login","/api/csrf-token"))
+                        .ignoringRequestMatchers("/api/auth/register", "/api/auth/login", "/api/csrf-token"))
                 .cors(withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**","/api/csrf-token").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/csrf-token").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(new JwtRequestFilter(jwtTokenUtil, userDetailsService),
-                        UsernamePasswordAuthenticationFilter.class);
+                        UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new CsrfTokenValidationFilter(csrfRepository, jwtTokenUtil),
+                        JwtRequestFilter.class);
 
         return http.build();
     }

@@ -4,9 +4,10 @@ import com.example.backend.SpringSecurity.dto.LoginRequest;
 import com.example.backend.SpringSecurity.dto.RegisterRequest;
 import com.example.backend.SpringSecurity.model.User;
 import com.example.backend.SpringSecurity.repository.UserRepository;
-import com.example.backend.SpringSecurity.security.CustomUserDetailsService;
+import com.example.backend.SpringSecurity.security.CsrfRepository;
+import com.example.backend.SpringSecurity.security.CustomUserDetails;
+import com.example.backend.SpringSecurity.service.CustomUserDetailsService;
 import com.example.backend.SpringSecurity.security.JwtTokenUtil;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -14,15 +15,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -33,15 +31,17 @@ public class AuthController {
     private final CustomUserDetailsService userDetailsService;
     private UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CsrfRepository csrfRepository;
 
     public AuthController(AuthenticationManager authenticationManager,
                           JwtTokenUtil jwtTokenUtil,UserRepository userRepository,
-                          CustomUserDetailsService userDetailsService,PasswordEncoder passwordEncoder) {
+                          CustomUserDetailsService userDetailsService,PasswordEncoder passwordEncoder,CsrfRepository csrfRepository) {
         this.authenticationManager = authenticationManager;
         this.jwtTokenUtil = jwtTokenUtil;
         this.userDetailsService = userDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
+        this.csrfRepository = csrfRepository;
     }
 
     @PostMapping("/login")
@@ -52,35 +52,38 @@ public class AuthController {
                         loginRequest.getPassword())
         );
 
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getEmail());
+        final CustomUserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getEmail());
         final String token = jwtTokenUtil.generateToken(userDetails);
 
+        String jti = jwtTokenUtil.extractClaim(token, claims -> claims.get("jti", String.class));
+        String csrfToken = csrfRepository.generateToken(jti);
 
         ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
                 .httpOnly(true)
-                .secure(true)
+                .secure(true)  // Set false for local dev without HTTPS
+                .path("/")
+                .maxAge(Duration.ofHours(2))
+                .sameSite("Lax")
+                .build();
+
+        ResponseCookie csrfCookie = ResponseCookie.from("XSRF-TOKEN", csrfToken)
+                .httpOnly(false)
+                .secure(true)  // Set false for local dev without HTTPS
                 .path("/")
                 .maxAge(Duration.ofHours(2))
                 .sameSite("Lax")
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, csrfCookie.toString());
 
-
-        String xsrfToken = UUID.randomUUID().toString();
-        ResponseCookie xsrfCookie = ResponseCookie.from("XSRF-TOKEN", xsrfToken)
-                .httpOnly(false)
-                .secure(true)
-                .path("/")
-                .maxAge(Duration.ofHours(2))
-                .sameSite("Lax")
-                .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, xsrfCookie.toString());
-
-        return ResponseEntity.ok(new AuthResponse(token));
-
+        return ResponseEntity.ok(Map.of(
+                "csrfToken", csrfToken,
+                "message", "Login successful"
+        ));
     }
+
+
 
 
 

@@ -1,8 +1,8 @@
-package com.example.backend.SpringSecurity.security;
+package com.example.backend.SpringSecurity.service;
 
 import com.example.backend.SpringSecurity.model.User; // Your User model
 import com.example.backend.SpringSecurity.repository.UserRepository;
-import org.springframework.security.core.userdetails.UserDetails;
+import com.example.backend.SpringSecurity.security.CustomUserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+    public CustomUserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
