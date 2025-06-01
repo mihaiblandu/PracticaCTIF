@@ -5,7 +5,7 @@ export async function fetchCsrfToken() {
 }
 
 export async function login(email, password) {
-  await fetchCsrfToken();
+  // await fetchCsrfToken();
   const response = await api.post('/api/auth/login', { email, password });
   return response.data;
 }
@@ -13,3 +13,4 @@ export async function login(email, password) {
 export async function register(userData) {
   return api.post('/api/auth/register', userData);
 }
+

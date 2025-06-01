@@ -1,21 +1,51 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { colors, spacing, typography, borderRadius } from '@/constants/theme';
-import { 
-  User, Settings, CreditCard, Gift, ShoppingBag, 
-  Heart, LogOut, ChevronRight 
+import {
+  User, Settings, CreditCard, Gift, ShoppingBag,
+  Heart, LogOut, ChevronRight
 } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import {router} from 'expo-router';
 
+
+import api from '@/app/api/auth/axiosApi';
+import { navigateToLogin } from '@/app/Navigation/navigationService';
 export default function ProfileScreen() {
+
+  const [profile, setProfile] = useState(null);
+
+
+
+
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get('/api/users/test');
+        setProfile(res.data);
+      } catch (err) {
+        console.error('Failed to fetch test endpoint:', err as Error);
+
+        if ((err as any).response?.status === 401 || (err as any).response?.status === 403) {
+          router.replace('/login');
+        }
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
         {/* Profile Header */}
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
+            <Button title="Go to login" onPress={() => router.replace('/login')} />
             <User size={40} color={colors.text.inverse} />
           </View>
           <View style={styles.userInfo}>
@@ -30,7 +60,7 @@ export default function ProfileScreen() {
             style={styles.editButton}
           />
         </View>
-        
+
         {/* Stats Summary */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
@@ -48,11 +78,11 @@ export default function ProfileScreen() {
             <Text style={styles.statLabel}>Favorites</Text>
           </View>
         </View>
-        
+
         {/* Menu Items */}
         <Card style={styles.menuCard}>
           <Text style={styles.menuTitle}>Account</Text>
-          
+
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
               <Settings size={20} color={colors.text.secondary} style={styles.menuIcon} />
@@ -60,7 +90,7 @@ export default function ProfileScreen() {
             </View>
             <ChevronRight size={20} color={colors.text.tertiary} />
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
               <CreditCard size={20} color={colors.text.secondary} style={styles.menuIcon} />
@@ -68,7 +98,7 @@ export default function ProfileScreen() {
             </View>
             <ChevronRight size={20} color={colors.text.tertiary} />
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
               <Gift size={20} color={colors.text.secondary} style={styles.menuIcon} />
@@ -77,10 +107,10 @@ export default function ProfileScreen() {
             <ChevronRight size={20} color={colors.text.tertiary} />
           </TouchableOpacity>
         </Card>
-        
+
         <Card style={styles.menuCard}>
           <Text style={styles.menuTitle}>Activity</Text>
-          
+
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
               <ShoppingBag size={20} color={colors.text.secondary} style={styles.menuIcon} />
@@ -88,7 +118,7 @@ export default function ProfileScreen() {
             </View>
             <ChevronRight size={20} color={colors.text.tertiary} />
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
               <Heart size={20} color={colors.text.secondary} style={styles.menuIcon} />
@@ -97,10 +127,10 @@ export default function ProfileScreen() {
             <ChevronRight size={20} color={colors.text.tertiary} />
           </TouchableOpacity>
         </Card>
-        
+
         <Card style={styles.menuCard}>
           <Text style={styles.menuTitle}>Preferences</Text>
-          
+
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
               <Settings size={20} color={colors.text.secondary} style={styles.menuIcon} />
@@ -108,7 +138,7 @@ export default function ProfileScreen() {
             </View>
             <ChevronRight size={20} color={colors.text.tertiary} />
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
               <Settings size={20} color={colors.text.secondary} style={styles.menuIcon} />
@@ -117,12 +147,12 @@ export default function ProfileScreen() {
             <ChevronRight size={20} color={colors.text.tertiary} />
           </TouchableOpacity>
         </Card>
-        
+
         <TouchableOpacity style={styles.logoutButton}>
           <LogOut size={20} color={colors.util.error} style={styles.logoutIcon} />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
-        
+
         <Text style={styles.versionText}>Version 1.0.0</Text>
       </ScrollView>
     </View>

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Redirect, Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
@@ -10,6 +10,7 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
+import { useAuth } from '@/contexts/authContext';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -23,28 +24,25 @@ export default function RootLayout() {
     'Inter-SemiBold': Inter_600SemiBold,
     'Inter-Bold': Inter_700Bold,
   });
+  const { isAuthenticated, loading } = useAuth();
+  const router = useRouter();
 
-  // Hide splash screen once fonts are loaded
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
+    if (!loading) {
+      if (isAuthenticated) {
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/login');
+      }
     }
-  }, [fontsLoaded, fontError]);
+  }, [loading, isAuthenticated]);
 
-  // Return null while fonts are loading
-  if (!fontsLoaded && !fontError) {
-    return null;
-  }
-
-
-  console.log(process);
-  // Redirect to login if not authenticated
   return (
     <>
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="register" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="register" />
+        <Stack.Screen name="(tabs)" />
         <Stack.Screen name="+not-found" options={{ title: 'Not Found' }} />
         <Stack.Screen
           name="product/[id]"
@@ -56,7 +54,6 @@ export default function RootLayout() {
         />
       </Stack>
       <StatusBar style="auto" />
-      <Redirect href="/login" />
     </>
   );
 }
