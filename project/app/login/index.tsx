@@ -5,8 +5,7 @@ import { colors, spacing, typography, borderRadius } from '@/constants/theme';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Coffee, Mail, Lock } from 'lucide-react-native';
-import { saveToken } from '@/utils/tokenStorage';
-import Cookies from 'js-cookie';
+
 import {login} from '@/services/authService';
 
 
@@ -25,6 +24,7 @@ export default function LoginScreen() {
       setIsLoading(true);
 
       const data = await login(email, password);
+      // clearCachedTokens(); // Clear the CSRF cache
 
       // await saveToken(data.token);
       // console.log("JWT saved!");

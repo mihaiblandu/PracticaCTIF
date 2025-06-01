@@ -6,6 +6,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
@@ -29,7 +30,7 @@ public class CsrfTokenValidationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        String csrfToken = request.getHeader("X-CSRF-TOKEN");
+        String csrfToken = request.getHeader("X-XSRF-TOKEN");
         String jwt = extractJwtFromRequest(request);
 
         if (jwt != null) {
@@ -49,16 +50,48 @@ public class CsrfTokenValidationFilter extends OncePerRequestFilter {
                 response.getWriter().write("Invalid CSRF Token");
                 return;
             }
+            System.out.println("XSRF header = " + request.getHeader("X-XSRF-TOKEN"));
+            System.out.println("JWT = " + jwt);
+            System.out.println("JWT ID = " + jti);
+            System.out.println("CSRF Token = " + csrfToken);
         }
+
 
         filterChain.doFilter(request, response);
     }
 
     private String extractJwtFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
+        String uri = request.getRequestURI();
+
+        if (uri.equals("/api/auth/login")) {
+            return null;
         }
+
+        System.out.println("Cookies in request:");
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                System.out.println(cookie.getName() + " = " + cookie.getValue());
+                if (cookie.getName().equals("jwt")) {
+                    return cookie.getValue();
+                }
+            }
+        } else {
+            System.out.println("No cookies received");
+        }
+
+        // Fallback: check Authorization header
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
         return null;
     }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.equals("/api/auth/login") || path.equals("/api/auth/refresh");
+    }
+
 }

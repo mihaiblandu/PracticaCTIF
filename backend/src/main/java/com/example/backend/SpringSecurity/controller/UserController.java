@@ -27,6 +27,11 @@ public class UserController {
         return mapToUserResponse(user);
     }
 
+    @GetMapping("/test")
+    public String testEndpoint() {
+        return "Test endpoint is working!";
+    }
+
     @GetMapping("/{id}")
     public UserResponse getUserById(@PathVariable Long id) {
         User user = userRepository.findById(id)

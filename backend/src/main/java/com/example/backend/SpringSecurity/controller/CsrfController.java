@@ -6,8 +6,14 @@ import com.example.backend.SpringSecurity.security.JwtTokenUtil;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 public class CsrfController {
@@ -21,42 +27,55 @@ public class CsrfController {
     }
 
     @GetMapping("/api/csrf-token")
-    public String csrfToken(HttpServletRequest request, HttpServletResponse response) {
-        // Extract JWT token from cookie or Authorization header
+    public ResponseEntity<Map<String, String>> csrfToken(HttpServletRequest request, HttpServletResponse response) {
         String jwt = extractJwtFromRequest(request);
-
         if (jwt == null) {
             return null;
         }
 
-        String jwtId = jwtTokenUtil.extractJwtId(jwt);  // extract JWT ID from your JWT claims
-
+        String jwtId = jwtTokenUtil.extractJwtId(jwt);
         String csrfToken = csrfRepository.generateToken(jwtId);
 
-        Cookie cookie = new Cookie("XSRF-TOKEN", csrfToken);
-        cookie.setPath("/");
-        cookie.setHttpOnly(false);
-        cookie.setSecure(true); // true in prod with HTTPS
-        response.addCookie(cookie);
+        // Set cookie manually with SameSite=None
+        String cookieHeader = "XSRF-TOKEN=" + csrfToken +
+                "; Path=/; Secure; HttpOnly=false; SameSite=None";
+        response.setHeader("Set-Cookie", cookieHeader);
 
-        return csrfToken; // or return some JSON with the token if you prefer
+        Map<String, String> body = new HashMap<>();
+        body.put("csrfToken", csrfToken); // Important!
+
+        return ResponseEntity.ok(body);
     }
 
     // Helper method to get JWT from cookie or header
     private String extractJwtFromRequest(HttpServletRequest request) {
-        // e.g. get from cookie named "JWT"
+        String uri = request.getRequestURI();
+
+        // Skip JWT extraction if this is the login endpoint
+        if (uri.equals("/api/auth/login")) {
+            return null;
+        }
+
+        System.out.println("Cookies in request:");
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
-                if ("JWT".equals(cookie.getName())) {
+                System.out.println(cookie.getName() + " = " + cookie.getValue());
+                if (cookie.getName().equals("jwt")) {
                     return cookie.getValue();
                 }
             }
+        } else {
+            System.out.println("No cookies received");
         }
-        // Or from Authorization Bearer header
+
+        // Fallback: check Authorization header
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             return authHeader.substring(7);
         }
+
         return null;
     }
+
+
 }

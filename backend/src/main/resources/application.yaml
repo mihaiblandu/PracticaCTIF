@@ -18,7 +18,7 @@ spring:
 
   cloud:
     vault:
-      uri: http://vault:8200
+      uri: http://192.168.100.8:8200
       authentication: token
       token: myroot
       kv:
@@ -39,6 +39,13 @@ server:
     key-store-password: development321
     key-store-type: PKCS12
 
+
+jwt:
+  expiration:
+    access-token: 30000    # 60 seconds (1 minute)
+    refresh-token: 60000 # 30 minutes
+
+
 logging:
   level:
     org:
@@ -49,3 +56,6 @@ logging:
         backend:
           SpringSecurity:
             security: DEBUG
+    io:
+        jsonwebtoken: DEBUG
+

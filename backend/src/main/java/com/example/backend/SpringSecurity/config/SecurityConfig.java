@@ -62,7 +62,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/api/auth/register", "/api/auth/login", "/api/csrf-token"))
+                        .ignoringRequestMatchers("/api/auth/register", "/api/auth/login", "/api/csrf-token","/api/auth/refresh"))
                 .cors(withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/api/csrf-token").permitAll()
@@ -89,7 +89,13 @@ public class SecurityConfig {
                 "exp://172.19.112.1:8081"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "X-XSRF-TOKEN",
+                "X-Requested-With"
+        ));
+        configuration.setExposedHeaders(Arrays.asList("X-XSRF-TOKEN")); // optional: for debugging
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
@@ -97,4 +103,5 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
+
 }

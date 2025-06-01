@@ -1,5 +1,6 @@
 package com.example.backend.SpringSecurity.controller;
 
+import com.example.backend.SpringSecurity.config.JwtExpirationProperties;
 import com.example.backend.SpringSecurity.dto.LoginRequest;
 import com.example.backend.SpringSecurity.dto.RegisterRequest;
 import com.example.backend.SpringSecurity.model.User;
@@ -8,8 +9,11 @@ import com.example.backend.SpringSecurity.security.CsrfRepository;
 import com.example.backend.SpringSecurity.security.CustomUserDetails;
 import com.example.backend.SpringSecurity.service.CustomUserDetailsService;
 import com.example.backend.SpringSecurity.security.JwtTokenUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,6 +37,9 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final CsrfRepository csrfRepository;
 
+    @Autowired
+    private JwtExpirationProperties jwtExpirationProperties;
+
     public AuthController(AuthenticationManager authenticationManager,
                           JwtTokenUtil jwtTokenUtil,UserRepository userRepository,
                           CustomUserDetailsService userDetailsService,PasswordEncoder passwordEncoder,CsrfRepository csrfRepository) {
@@ -45,7 +52,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getEmail(),
@@ -54,35 +61,47 @@ public class AuthController {
 
         final CustomUserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getEmail());
         final String token = jwtTokenUtil.generateToken(userDetails);
+        final String refreshToken = jwtTokenUtil.generateRefreshToken(userDetails);
 
         String jti = jwtTokenUtil.extractClaim(token, claims -> claims.get("jti", String.class));
         String csrfToken = csrfRepository.generateToken(jti);
 
         ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
                 .httpOnly(true)
-                .secure(true)  // Set false for local dev without HTTPS
+                .secure(true)
                 .path("/")
                 .maxAge(Duration.ofHours(2))
-                .sameSite("Lax")
+                .sameSite("None")
                 .build();
 
         ResponseCookie csrfCookie = ResponseCookie.from("XSRF-TOKEN", csrfToken)
                 .httpOnly(false)
-                .secure(true)  // Set false for local dev without HTTPS
+                .secure(true)
                 .path("/")
                 .maxAge(Duration.ofHours(2))
-                .sameSite("Lax")
+                .sameSite("None")
                 .build();
 
-        response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
-        response.addHeader(HttpHeaders.SET_COOKIE, csrfCookie.toString());
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(Duration.ofDays(30))
+                .sameSite("None")
+                .build();
 
-        return ResponseEntity.ok(Map.of(
-                "csrfToken", csrfToken,
-                "message", "Login successful"
-        ));
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.SET_COOKIE, jwtCookie.toString());
+        headers.add(HttpHeaders.SET_COOKIE, csrfCookie.toString());
+        headers.add(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(Map.of(
+                        "csrfToken", csrfToken,
+                        "message", "Login successful"
+                ));
     }
-
 
 
 
@@ -108,6 +127,66 @@ public class AuthController {
 
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@CookieValue(name = "refreshToken", required = false) String refreshToken,
+                                          HttpServletResponse response) {
+        if (refreshToken == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh token is missing");
+        }
+
+        try {
+            // Validate refresh token signature, expiration, and type
+            if (!jwtTokenUtil.validateRefreshToken(refreshToken)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid refresh token");
+            }
+            System.out.println("refreshToken cookie = " + refreshToken);
+
+            // Extract username (subject) from refresh token
+            String username = jwtTokenUtil.extractUsername(refreshToken);
+
+            // Load user details
+            CustomUserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+            // Generate new access token
+            String newAccessToken = jwtTokenUtil.generateToken(userDetails);
+
+            // Generate new CSRF token with newAccessToken's JTI (if you use this technique)
+            String jti = jwtTokenUtil.extractJwtId(newAccessToken);
+            String csrfToken = csrfRepository.generateToken(jti);
+
+            // Create cookies for new access token and CSRF token
+            ResponseCookie jwtCookie = ResponseCookie.from("jwt", newAccessToken)
+                    .httpOnly(true)
+                    .secure(true)
+                    .path("/")
+                    .maxAge(Duration.ofMillis(jwtExpirationProperties.getAccessToken()))
+                    .sameSite("None")
+                    .build();
+
+            ResponseCookie csrfCookie = ResponseCookie.from("XSRF-TOKEN", csrfToken)
+                    .httpOnly(false)
+                    .secure(true)
+                    .path("/")
+                    .maxAge(Duration.ofMillis(jwtExpirationProperties.getAccessToken()))
+                    .sameSite("None")
+                    .build();
+
+            // Add cookies to response headers
+            response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
+            response.addHeader(HttpHeaders.SET_COOKIE, csrfCookie.toString());
+
+            // Optionally return some JSON confirmation
+            return ResponseEntity.ok(Map.of(
+                    "csrfToken", csrfToken,
+                    "message", "Access token refreshed successfully"
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Could not refresh token: " + e.getMessage());
+        }
+    }
+
 
 
     @GetMapping("/test")

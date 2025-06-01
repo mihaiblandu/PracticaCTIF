@@ -1,5 +1,6 @@
 package com.example.backend.SpringSecurity.security;
 
+import com.example.backend.SpringSecurity.service.HmacSecretService;
 import org.springframework.stereotype.Component;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -12,13 +13,23 @@ import java.util.Base64;
 public class CsrfRepository {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
-    private static final String SECRET_KEY = "super-secret-hmac-key";
+    private final HmacSecretService hmacSecretService;
+
+    public CsrfRepository(HmacSecretService hmacSecretService) {
+        this.hmacSecretService = hmacSecretService;
+    }
+
 
     public String generateToken(String jwtId) {
-        String randomValue = generateRandomValue();
-        String message = jwtId.length() + "!" + jwtId + "!" + randomValue.length() + "!" + randomValue;
-        String hmac = hmacSha256(SECRET_KEY, message);
-        return hmac + "." + randomValue;
+        try {
+            String secretKey = hmacSecretService.getSecretKey();
+            String randomValue = generateRandomValue();
+            String message = jwtId.length() + "!" + jwtId + "!" + randomValue.length() + "!" + randomValue;
+            String hmac = hmacSha256(secretKey, message);
+            return hmac + "." + randomValue;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate CSRF token", e);
+        }
     }
 
     public boolean validateToken(String jwtId, String csrfTokenFromRequest) {
@@ -28,11 +39,12 @@ public class CsrfRepository {
         String[] parts = csrfTokenFromRequest.split("\\.");
         if (parts.length != 2) return false;
 
+        String secretKey = hmacSecretService.getSecretKey();
         String receivedHmac = parts[0];
         String randomValue = parts[1];
         String message = jwtId.length() + "!" + jwtId + "!" + randomValue.length() + "!" + randomValue;
 
-        String expectedHmac = hmacSha256(SECRET_KEY, message);
+        String expectedHmac = hmacSha256(secretKey, message);
         return MessageDigest.isEqual(expectedHmac.getBytes(StandardCharsets.UTF_8),
                 receivedHmac.getBytes(StandardCharsets.UTF_8));
     }
