@@ -122,6 +122,7 @@ public class AuthController {
         user.setUsername(registerRequest.getUsername());
         user.setEmail(registerRequest.getEmail());
         user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        user.setRole("ROLE_USER");
 
         userRepository.save(user);
 
@@ -136,26 +137,26 @@ public class AuthController {
         }
 
         try {
-            // Validate refresh token signature, expiration, and type
+
             if (!jwtTokenUtil.validateRefreshToken(refreshToken)) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid refresh token");
             }
             System.out.println("refreshToken cookie = " + refreshToken);
 
-            // Extract username (subject) from refresh token
+
             String username = jwtTokenUtil.extractUsername(refreshToken);
 
-            // Load user details
+
             CustomUserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-            // Generate new access token
+
             String newAccessToken = jwtTokenUtil.generateToken(userDetails);
 
-            // Generate new CSRF token with newAccessToken's JTI (if you use this technique)
+
             String jti = jwtTokenUtil.extractJwtId(newAccessToken);
             String csrfToken = csrfRepository.generateToken(jti);
 
-            // Create cookies for new access token and CSRF token
+
             ResponseCookie jwtCookie = ResponseCookie.from("jwt", newAccessToken)
                     .httpOnly(true)
                     .secure(true)
@@ -172,11 +173,11 @@ public class AuthController {
                     .sameSite("None")
                     .build();
 
-            // Add cookies to response headers
+
             response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
             response.addHeader(HttpHeaders.SET_COOKIE, csrfCookie.toString());
 
-            // Optionally return some JSON confirmation
+
             return ResponseEntity.ok(Map.of(
                     "csrfToken", csrfToken,
                     "message", "Access token refreshed successfully"

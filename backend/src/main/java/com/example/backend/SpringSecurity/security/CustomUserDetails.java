@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 @Getter
 @Setter
@@ -20,6 +21,15 @@ public class CustomUserDetails implements UserDetails {
 
     public CustomUserDetails(User user) {
         this.user = user;
+    }
+    public CustomUserDetails(String email, String password, List<SimpleGrantedAuthority> role)
+    {
+        this.user = new User();
+        this.user.setEmail(email);
+        this.user.setPassword(password);
+        this.user.setRole("ROLE_USER");
+        // Assuming User has a method to set roles or authorities
+
     }
 
     @Override

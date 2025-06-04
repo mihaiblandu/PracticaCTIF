@@ -6,8 +6,10 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -28,6 +30,9 @@ public class User {
     @Column(nullable = false, length = 255)
     @JsonIgnore
     private String password;
+
+    @Column(nullable = false, length = 20)
+    private String role;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

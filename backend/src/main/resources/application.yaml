@@ -43,7 +43,7 @@ server:
 jwt:
   expiration:
     access-token: 30000    # 60 seconds (1 minute)
-    refresh-token: 60000 # 30 minutes
+    refresh-token: 600000 # 30 minutes
 
 
 logging:

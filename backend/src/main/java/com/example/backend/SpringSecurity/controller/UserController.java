@@ -19,58 +19,58 @@ public class UserController {
         this.userRepository = userRepository;
     }
 
-    @GetMapping("/me")
-    public UserResponse getCurrentUser(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        User user = userRepository.findById(userDetails.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        return mapToUserResponse(user);
-    }
+//    @GetMapping("/me")
+//    public UserResponse getCurrentUser(@AuthenticationPrincipal CustomUserDetails userDetails) {
+//        User user = userRepository.findById(userDetails.getId())
+//                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+//
+//        return mapToUserResponse(user);
+//    }
 
     @GetMapping("/test")
     public String testEndpoint() {
         return "Test endpoint is working!";
     }
 
-    @GetMapping("/{id}")
-    public UserResponse getUserById(@PathVariable Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+//    @GetMapping("/{id}")
+//    public UserResponse getUserById(@PathVariable String id) {
+//        User user = userRepository.findById(id)
+//                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+//
+//        return mapToUserResponse(user);
+//    }
 
-        return mapToUserResponse(user);
-    }
+//    @PutMapping("/me")
+//    public UserResponse updateCurrentUser(
+//            @AuthenticationPrincipal CustomUserDetails userDetails,
+//            @RequestBody UpdateUserRequest updateRequest) {
+//
+//        User user = userRepository.findById(userDetails.getId())
+//                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+//
+//        // Update allowed fields
+//        if (updateRequest.getUsername() != null) {
+//            user.setUsername(updateRequest.getUsername());
+//        }
+//        if (updateRequest.getEmail() != null) {
+//            user.setEmail(updateRequest.getEmail());
+//        }
+//
+//        User updatedUser = userRepository.save(user);
+//        return mapToUserResponse(updatedUser);
+//    }
 
-    @PutMapping("/me")
-    public UserResponse updateCurrentUser(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestBody UpdateUserRequest updateRequest) {
-
-        User user = userRepository.findById(userDetails.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        // Update allowed fields
-        if (updateRequest.getUsername() != null) {
-            user.setUsername(updateRequest.getUsername());
-        }
-        if (updateRequest.getEmail() != null) {
-            user.setEmail(updateRequest.getEmail());
-        }
-
-        User updatedUser = userRepository.save(user);
-        return mapToUserResponse(updatedUser);
-    }
-
-    @DeleteMapping("/me")
-    public void deleteCurrentUser(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        userRepository.deleteById(userDetails.getId());
-    }
-
-    private UserResponse mapToUserResponse(User user) {
-        return new UserResponse(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getCreatedAt()
-        );
-    }
+//    @DeleteMapping("/me")
+//    public void deleteCurrentUser(@AuthenticationPrincipal CustomUserDetails userDetails) {
+//        userRepository.deleteById(userDetails.getId());
+//    }
+//
+//    private UserResponse mapToUserResponse(User user) {
+//        return new UserResponse(
+//                user.getId(),
+//                user.getUsername(),
+//                user.getEmail(),
+//                user.getCreatedAt()
+//        );
+//    }
 }

@@ -186,13 +186,12 @@ public class JwtTokenUtil {
     }
 
 
-    public Boolean validateToken(String token, CustomUserDetails userDetails) {
+    public Boolean validateToken(String token) {
         logger.debug("Validating JWT token");
         try {
-            final String username = extractUsername(token);
             final String type = extractType(token);
             final String origin = extractOrigin(token);
-            boolean valid = (username.equals(userDetails.getUsername()) && !isTokenExpired(token)
+            boolean valid = (!isTokenExpired(token)
                     && "access".equals(type) && "http://localhost:8081".equals(origin));
             logger.debug("Token valid: {}", valid);
             return valid;
@@ -227,6 +226,10 @@ public class JwtTokenUtil {
     public String extractOrigin(String token) {
         return extractClaim(token, claims -> claims.get("origin", String.class));
     }
+    public String extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("userId", String.class));
+    }
+
     public String extractType(String token) {
         return extractClaim(token, claims -> claims.get("type", String.class));
     }
