@@ -3,8 +3,8 @@ spring:
     name: backend
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/coffee_shop}
-    username: ${SPRING_DATASOURCE_USERNAME:user}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/coffee_shop}  # this is not obligatory
+    username: ${SPRING_DATASOURCE_USERNAME:user}  
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
