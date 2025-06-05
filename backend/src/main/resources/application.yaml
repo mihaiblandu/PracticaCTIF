@@ -18,7 +18,7 @@ spring:
 
   cloud:
     vault:
-      uri: http://192.168.100.8:8200
+      uri: http://192.168.100.8:8200   # virtual adress or 127.0.0.01
       authentication: token
       token: myroot
       kv:
