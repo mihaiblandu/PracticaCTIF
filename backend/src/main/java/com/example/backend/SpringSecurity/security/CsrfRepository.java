@@ -22,9 +22,11 @@ public class CsrfRepository {
 
     public String generateToken(String jwtId) {
         try {
+            //origin
             String secretKey = hmacSecretService.getSecretKey();
             String randomValue = generateRandomValue();
-            String message = jwtId.length() + "!" + jwtId + "!" + randomValue.length() + "!" + randomValue;
+            String origin = "http://localhost:8081";
+            String message = jwtId.length() + "!" + jwtId + "!" + randomValue.length() + "!" + origin + "!" + randomValue;
             String hmac = hmacSha256(secretKey, message);
             return hmac + "." + randomValue;
         } catch (Exception e) {
@@ -36,18 +38,25 @@ public class CsrfRepository {
         if (csrfTokenFromRequest == null || !csrfTokenFromRequest.contains(".")) {
             return false;
         }
+
         String[] parts = csrfTokenFromRequest.split("\\.");
         if (parts.length != 2) return false;
 
-        String secretKey = hmacSecretService.getSecretKey();
         String receivedHmac = parts[0];
         String randomValue = parts[1];
-        String message = jwtId.length() + "!" + jwtId + "!" + randomValue.length() + "!" + randomValue;
+
+        String secretKey = hmacSecretService.getSecretKey();
+        String origin = "http://localhost:8081";
+
+        String message = jwtId.length() + "!" + jwtId + "!" + randomValue.length() + "!" + origin + "!" + randomValue;
 
         String expectedHmac = hmacSha256(secretKey, message);
-        return MessageDigest.isEqual(expectedHmac.getBytes(StandardCharsets.UTF_8),
-                receivedHmac.getBytes(StandardCharsets.UTF_8));
+        return MessageDigest.isEqual(
+                expectedHmac.getBytes(StandardCharsets.UTF_8),
+                receivedHmac.getBytes(StandardCharsets.UTF_8)
+        );
     }
+
 
     private String hmacSha256(String key, String data) {
         try {
